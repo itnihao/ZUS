@@ -1,0 +1,56 @@
+#!/usr/bin/expect --
+#by orbs
+proc help {} {
+    puts "\n"
+    puts "Usage:\t\t./demo.exp hostfile.txt\n\n"
+    puts "\tExp:"
+    puts "\t\t./demo.exp hostfile.txt"
+    puts "\tNotice:"
+    puts "\t\thostfile.txt<ip sshport passwd>"
+    puts "\n"
+}
+
+if {$argc == 0} {
+    help
+    exit 1
+}
+for {set x 0} {$x < $argc} {incr x} {
+    set hostfile [lindex $argv $x]
+    set comdfile [lindex $argv [expr $x + 1]]
+    incr x
+}
+
+set host_file [open $hostfile]
+while {[gets $host_file line] > 0} {
+    lappend host_list $line
+}
+close $host_file
+set host_list_length [llength $host_list]
+
+set comd_file [open $comdfile]
+while {[gets $comd_file line] > 0} {
+    lappend comd_list $line
+}
+close $comd_file
+set comd_list_length [llength $comd_list]
+
+
+for {set y 0} {$y < $host_list_length} {incr y} {
+    set hosts [lindex $host_list $y]
+    set ipaddr [lindex $hosts 0]
+    set shport [lindex $hosts 1]
+    set passwd [lindex $hosts 2]
+    for {set z 0} {$z < $comd_list_length} {incr z} {
+	set command [lindex $comd_list $z]
+	spawn ssh $ipaddr -p$shport 
+	expect {
+	    "yes/no" { send "yes\r";exp_contionue }
+	    "sword:" { send "$passwd\r" }
+	}
+	expect -re "\](\$|#) "
+	send "$command \r"
+	expect -re "\](\$|#) "
+	send "exit \r"
+    }
+    
+}
