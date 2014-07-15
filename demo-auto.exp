@@ -2,11 +2,12 @@
 #by orbs
 proc help {} {
     puts "\n"
-    puts "Usage:\t\t./demo.exp hostfile.txt\n\n"
+    puts "Usage:\t\t./demo.exp hostfile.txt command.txt\n\n"
     puts "\tExp:"
-    puts "\t\t./demo.exp hostfile.txt"
+    puts "\t\t./demo.exp hostfile.txt command.txt"
     puts "\tNotice:"
     puts "\t\thostfile.txt<ip sshport passwd>"
+    puts "\t\tcommand.txt<one by one>"
     puts "\n"
 }
 
