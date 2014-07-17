@@ -1,0 +1,95 @@
+#!/usr/bin/env expect
+#by orbs
+#auto login remote host and exec command(log info)
+#version 1.0
+proc help {} {
+    puts "Usage: ./exp.exp <-h 'help' |-C 'cmd file' |-F 'host file' |-P 'filename'|-D 'filename'>\n\n"
+    puts "\t-C <\"cmd file\">\t\t\tDesign command file<shell command line>"
+    puts "\t-F <\"host file\">\t\tDesign host file<IP SSHPORT PASSWD>"
+    puts "\t-P <\"ready to push file\">\tDesign ready to push filename"
+    puts "\t-D <\"ready to down file\">\tDesign ready to down filename"
+    puts "\t-h \t\t\t\tDisplay help info"
+    puts "\t\n"
+    puts "\tExp:\n"
+    puts "\t\t\./exp.exp -F hostfile.txt -C command.txt\n"
+    puts "\t\t\./exp.exp -F hostfile.txt -P filename\n"
+    puts "\t\t\./exp.exp -F hostfile.txt -D filename\n"
+}
+#不带参数显示帮助信息
+if {$argc == 0} {
+    help
+    exit 1
+}
+#循环查找匹配参数变量
+for {set i 0} {$i < $argc} {incr i} {
+    set argv_tmp [lindex $argv $i]
+    if [regexp {^-h$} $argv_tmp] {
+	help
+	exit
+    } elseif [regexp {^-C$} $argv_tmp] {
+	#command_file 命令文件(命令行参数)
+	set command_file [lindex $argv [expr $i +1]]   
+	incr i
+    } elseif [regexp {^-F$} $argv_tmp] {
+	#hosts_file 主机文件(命令行参数)
+	set host_file [lindex $argv [expr $i +1]]
+	incr i
+    } elseif [regexp {^-P$} $argv_tmp] {
+	set push_file [lindex $argv [expr $i +1]]
+	incr i
+    } elseif [regexp {^-D$} $argv_tmp] {
+	set down_file [lindex $argv [expr $i +1]]
+    } else {
+	if {![info exists command_file]} {
+	    set command_file [lindex $argv $i]
+	} elseif {![info exists host_file]} {
+	    set host_file [lindex $argv $i]
+	}
+    }
+}
+#判断参数个数,不符合就退出显示帮助
+if {![info exists host_file] && ![info exists hosts_files]} {
+    help
+    exit 1
+} elseif {![info exists cmd_f] && ![info exists command_file]} {
+    help
+    exit 1
+}
+#整理命令文件
+if {![info exists cmd_f]} {
+    set cmd_file [open $command_file]
+    while {[gets $cmd_file cmd_line] > 0} {
+    #命令文件整理到command_file_list列表中
+	lappend command_file_list $cmd_line
+    }
+    close $cmd_file
+} else {
+    lappend command_file_list $cmd_f
+}
+
+if {![info exists hosts_files]} {
+    set hostfile [open $host_file]
+    while {[gets $hostfile line] > 0} {
+    #主机一行一行读取整理到hostfile列表中
+	lappend hostfiles $line
+    }
+    close $hostfile
+} else {
+    lappend hostfiles $hosts_files
+}
+set hostfile_list_length [llength $hostfiles]
+for {set y 0} {$y < $hostfile_list_length} {incr y} {
+    set hosts [lindex $hostfiles $y]
+    set ipaddr [lindex $hosts 0]
+    set shport [lindex $hosts 1]
+    set passwd [lindex $hosts 2]
+    spawn ssh $ipaddr -p$shport
+    expect {
+        "yes/no" { send "yes\r";exp_contionue }
+        "sword:" { send "$passwd\r" }
+    }
+    expect -re "\](\$|#) "
+    send "date \r"
+    expect -re "\](\$|#) "
+    send "exit \r"
+}
