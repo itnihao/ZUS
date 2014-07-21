@@ -45,13 +45,13 @@ for {set y 0} {$y < $host_list_length} {incr y} {
 	set command [lindex $comd_list $z]
 	spawn ssh $ipaddr -p$shport 
 	expect {
-	    "yes/no" { send "yes\r";exp_contionue }
+	    "yes/no" { send "yes\r" }
 	    "sword:" { send "$passwd\r" }
+	    timeout { break }
+	    default { break }
 	}
-	expect -re "\](\$|#) "
-	send "$command \r"
-	expect -re "\](\$|#) "
-	send "exit \r"
+	expect -re "\](\$|#) " { send "$command \r" }
+	expect -re "\](\$|#) " {send "exit \r" }
     }
     
 }
