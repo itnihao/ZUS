@@ -1,48 +1,85 @@
 #!/usr/bin/expect --
 #by orbs
+#-----------------------------------------------------------
+#Definitions help documentation
 proc help {} {
-    puts "\n"
-    puts "Usage:\t\t./demo.exp hostfile.txt command.txt\n\n"
+    puts "Usage:\t\t./demo.exp -F hostfile.txt -C command.txt"
+    puts "\t\t./demo.exp -F hostfile.txt -S source_filename -D remote_dir\n"
     puts "\tExp:"
-    puts "\t\t./demo.exp hostfile.txt command.txt"
+    puts "\t\t./demo.exp -F hostfile.txt -C command.txt"
+    puts "\t\t./demo.exp -F hostfile.txt -S source_filename -D remote_dir\n"
     puts "\tNotice:"
     puts "\t\thostfile.txt<ip sshport passwd>"
     puts "\t\tcommand.txt<one by one>"
+    puts "\t\tsource_filename<local file>"
+    puts "\t\tremote_dir<remote host dir>"
     puts "\n"
 }
-
 if {$argc == 0} {
     help
     exit 1
 }
+#-----------------------------------------------------------
+#Determine the parameters
 for {set x 0} {$x < $argc} {incr x} {
-    set hostfile [lindex $argv $x]
-    set comdfile [lindex $argv [expr $x + 1]]
-    incr x
+    set argc_tmp [lindex $argv $x]
+    if [ regexp {^-F$} $argc_tmp ] {
+	set hosts_file [lindex $argv [expr $x+1]]
+	incr x
+    } elseif [regexp {^-C$} $argc_tmp] {
+	set comds_file [lindex $argv [expr $x+1]]
+	incr x
+    } elseif [regexp {^-S$} $argc_tmp] {
+	set source_file [lindex $argv [expr $x+1]]
+	incr x
+    } elseif [regexp {^-D$} $argc_tmp] {
+	set remote_dir [lindex $argv [expr $x+1]]
+	incr x
+    } else {
+	if { ! [info exists hosts_file] } {
+	    set hosts_file [lindex $argv $x]
+	} elseif { ! [info exists comds_file]} {
+	    set comds_file [lindex $argv $x]
+	}
+    }
 }
-
-set host_file [open $hostfile]
-while {[gets $host_file line] > 0} {
-    lappend host_list $line
+#-----------------------------------------------------------
+if {![info exists hosts_file] && ![info exists hostfile]} {
+    help
+    exit 1
 }
-close $host_file
+if {![info exists comds_file] && ![info exists comdfile]} {
+    help
+    exit 1
+}
+#-----------------------------------------------------------
+#Archive the  hostfile
+if {![info exists hostfile]} {
+    set host_file [open $hosts_file]
+    while {[gets $host_file line] > 0} {
+	lappend host_list $line
+    }
+    close $host_file
+}
 set host_list_length [llength $host_list]
-
-set comd_file [open $comdfile]
-while {[gets $comd_file line] > 0} {
-    lappend comd_list $line
+#-----------------------------------------------------------
+#Archive the command file
+if {![info exists comdfile]} {
+    set comd_file [open $comds_file]
+    while {[gets $comd_file line] > 0} {
+	lappend comd_list $line
+    }
+    close $comd_file
 }
-close $comd_file
 set comd_list_length [llength $comd_list]
-
-
-for {set y 0} {$y < $host_list_length} {incr y} {
-    set hosts [lindex $host_list $y]
+#-----------------------------------------------------------
+for {set z 0} {$z < $host_list_length} {incr z} {
+    set hosts [lindex $host_list $z]
     set ipaddr [lindex $hosts 0]
     set shport [lindex $hosts 1]
     set passwd [lindex $hosts 2]
-    for {set z 0} {$z < $comd_list_length} {incr z} {
-	set command [lindex $comd_list $z]
+    for {set i 0} {$i < $comd_list_length} {incr i} {
+	set command [lindex $comd_list $i]
 	spawn ssh $ipaddr -p$shport 
 	expect {
 	    "yes/no" { send "yes\r" }
@@ -51,7 +88,7 @@ for {set y 0} {$y < $host_list_length} {incr y} {
 	    default { break }
 	}
 	expect -re "\](\$|#) " { send "$command \r" }
-	expect -re "\](\$|#) " {send "exit \r" }
+	expect -re "\](\$|#) " { send "exit \r" }
     }
-    
 }
+#-----------------------------------------------------------
