@@ -1,0 +1,418 @@
+#!/usr/bin/expect
+#by orbs
+#email zhorbs@163.com
+
+proc help {} {
+    puts "\tUsage:"
+    puts "\t\t./exp.exp -F hostfile -C commandfile"
+    puts "\tExp:"
+    puts "\t\t./exp.exp -F hostfile -C commandfile"
+    puts "\t\t./exp.exp -S sourcefile -D remote_dir -F hostfile -C commandfile"
+    puts "\tNotice:"
+    puts "\t\thostfile\t<ip sshport password>"
+    puts "\t\tcommandfile\t<command line>"
+    puts "\t\tsourcefile\t<local filename>"
+    puts "\t\tremote_dir\t<remote host dirname>"
+    puts "\n"
+}
+for {set x 0} {$x < $argc} {incr x} {
+    set argc_tmp [lindex $argv $x]
+    if [regexp {^-F$} $argc_tmp] {
+	set hosts_file [lindex $argv [expr $x + 1]]
+	incr x
+    } elseif [regexp {^-C$} $argc_tmp] {
+	set commands_file [lindex $argv [expr $x + 1]]
+	incr x
+    } elseif [regexp {^-S} $argc_tmp] {
+	set sources_file [lindex $argv [expr $x + 1]]
+	incr x
+    } elseif [regexp {^-D$} $argc_tmp] {
+	set remotes_dir [lindex $argv [expr $x + 1]]
+	incr x
+    } else {
+	if {![info exists hosts_file]} {
+	    set hosts_file [lindex $argv $x]
+	} elseif {![info exists commands_file]} {
+	    set commands_file [lindex $argv $x]
+	}
+    }
+}
+if {$argc == 0} {
+    help
+    exit 1
+}
+if {![info exists hosts_file] && ![info exists hostsfile]} {
+    help
+    exit 1
+}
+if {![info exists commands_file] && ![info exists commandsfile]} {
+    help
+    exit 1
+}
+if {![info exists hostsfile]} {
+    set host_file [open $hosts_file]
+    while {[gets $host_file line] > 0} {
+	lappend host_list $line
+    }
+    close $host_file
+}
+set host_list_length [llength $host_list]
+if {![info exists commandsfile]} {
+    set command_file [open $commands_file]
+    while {[gets $command_file line] > 0} {
+	lappend command_list $line
+    }
+    close $command_file
+}
+set command_list_length [llength $command_list]
+#--------------------------------------------------
+set max_num 100
+set now_date [timestamp -format "%Y%m%d%H%M"]
+set now_time [clock seconds]
+set sleep_time 10
+set log_dir "loginfo"
+set log_dir_1 "$log_dir/$now_date"
+set log_file "exp_$now_date.log"
+set logfile "$log_dir/$log_file"
+set log_info ""
+set temp_dir ".tmp"
+set ppid [pid]
+set host_num 0
+set key_password "sword:"
+set key_password_faild "\(publish,password\)."
+set key_init "\(yes/no\)?"
+set key_confirm "'yes'\ or\ 'no':"
+set key_ps ".*\](#|\\\$)"
+set key_newpassword "UNIX passsword:"
+if {![file exists $log_dir]} {
+    file mkdir $log_dir
+}
+if {![file exists $log_dir_1]} {
+    file mkdir $log_dir_1
+}
+if {![file exists $temp_dir]} {
+    file mkdir $temp_dir
+}
+set pid_file [glob -nocomplain -directory -tails -type f .*]
+proc child {} {
+    global ppid temp_dir
+    while {![catch {wait -i -1} output]} {
+	set p [lindex $output 0]
+	if [file exists "$temp_dir/.$p"] {
+	    file delete "$temp_dir/.$p"
+	}
+    }
+    return
+}
+proc write_log {logfile message} {
+    if [catch {open $logfile "a+"} result] {
+	after 10
+	while [catch {open $logfile "a+"} result] {
+	    after 10
+	}
+    }
+    set log_file $result
+    if [catch {puts $log_file $message} result] {
+	after 10
+	while [catch {puts $log_file $message} result] {
+	    after 10
+	}
+    }
+    close $log_file
+    return
+}
+proc err_log {mid host type} {
+    if {[catch {set log_file [open ".$mid" "a+"]} errmsg]} {
+	after 10
+	while {[catch {set log_file [open ".$mid" "a+"]} errmsg]} {
+	    after 10
+	}
+    }
+    if {[catch {puts $log_file "$type $host"} result]} {
+	after 10
+	while {[catch {puts $log_file "$type $host"} result]} {
+	    after 10
+	}
+    }
+    close $log_file
+    return
+}
+proc sum_log {var mid} {
+    global log_dir_1
+    set log_num [llength [glob -nocomplain -directory $log_dir_1 -tails -type f .*]]
+    set host_en 0
+    set log_info "\n======Sum=====\n"
+    set log_info "$log_info\t:$var log:$log_num\n"
+    if [file exists ".$mid"] {
+	set log_file [open ".$mid"]
+	while {[gets $log_file line] >= 0} {
+	    set str [string trim $line]
+	    set _list_ [split $str " "]
+	    set tag [lindex $_list_ 0]
+	    set host [lindex $_list_ 1]
+	    if [info exists error_num($tag)] {
+		incr error_num($tag)
+		lappend error_host($tag)
+	    } else {
+		set error_num($tag) 1
+		set error_host($tag) $host
+	    }
+	}
+	file delete ".$mid"
+	set _tag_list_ [split [string trim [array names error_num]] " "]
+	for {set i 0} {$i < [llength $_tag_list_]} {incr i} {
+	    set log_info "$log_info------\n"
+	    if {[lindex $_tag_list_ $i] == "connect"} {
+		set log_info "$log_info\tConnect failed:$error_num([lindex $_tag_list_ $i])\n"
+		set log_info "$log_info======\n"
+		set log_info "$log_info\tConenect failed ipaddress:$error_host([lindex $_tag_list_ $i])\n"
+	    } elseif {[lindex $_tag_list_ $i] == "password"} {
+		set log_info "$log_info\tPassword error:$error_num([lindex $_tag_list_ $i])\n"
+		set log_info "$log_info======\n"
+		set log_info "$log_info\tPasssword error ipaddress:$error_host([lindex $_tag_list $i])\n"
+	    } elseif {[lindex $_tag_list_ $i] == "timeout"} {
+		set log_info "$log_info\tTimeout:$error_num([lindex $_tag_list_ $i])\n"
+		set log_info "$log_info======\n"
+		set log_info "$log_info\tTimeout ipaddress:$error_host([lindex $_tag_list $i])\n"
+	    } else {
+		set log_info "$log_info\tOther error:$error_num([lindex $_tag_list_ $i])\n"
+		set log_info "$log_info======\n"
+		set log_info "$log_info\tOther error ipaddress:$error_host([lindex $_tag_list_ $i])\n"
+	    }
+	    incr host_en $error_num([lindex $_tag_list_ $i])
+	}
+    }
+    set log_info "$log_info======\n"
+    set log_info "$log_info\tsuccess:[expr $var - $host_en] log:$log_num"
+    set log_info "$log_info======\n"
+    return $log_info
+}
+proc make_log {} {
+
+}
+proc send_file {sourcefile destdir} {
+    global host port user pass ppid log_info
+    global key_pasword key_password_faild key_init key_confirm key_ps
+    if [info exists user] {
+		spawn /usr/bin/rsync -arzv -e "ssh -l$user -p$port" $sourcefile $host:$destdir
+    } else {
+		spawn /usr/bin/rsync -arzv -e "ssh -p$port" $sourcefile $host:$destdir
+    }
+    while {1} {
+		expect {
+			"$key_password" {
+				send -s "$pass\r"
+				set log_info "$log_info$expect_out(buffer)"
+			}
+			"$key_init" {
+				send -s "yes\r"
+				set log_info "$log_info$expect_out(buffer)"
+			}
+			"$key_comfirm" {
+				send -s "yes\r"
+				set log_info "$log_info$expect_out(buffer)"
+			}
+			"$key_password_faild" {
+				puts "$host password error"
+				err_log $ppid $host "password"
+				set log_info "$log_info$expect_out(buffer)"
+				break
+			}
+			-re "$key_rsync_error" {
+				puts "$host rsync error"
+				err_log $ppid $host "rsync"
+				set log_info "$log_info$expect_out(buffer)"
+				braek
+			}
+			timeout {
+				puts "$host timeout"
+				err_log $ppid $host "timeout"
+				break
+			}
+			default {
+				set success 1
+				break
+			}
+		}
+    }
+    catch {close}
+    catch {wait}
+    if [info exists success] {
+		return 0
+    } else {
+		return 1
+    }
+}
+for {set h 0} {$h < $host_list_length} {incr h} {
+    incr host_num
+    set host_line [lindex $host_list $h]
+    set host [lindex $host_line 0]
+    set port [lindex $host_line 1]
+    set pass [lindex $host_line 2]
+    if {![info exist run_pid]} {
+		set run_pid 0
+    }
+    if {$run_pid <= $max_num} {
+		set child_pid [fork]
+		if {$child_pid == 0 || $ppid != [pid]} {
+			log_file -a "$log_dir_1/$host-$now_date.log"
+			trap {
+			puts "PID:[pid] exit..."
+			exit
+			} SIGINT
+			catch {unset spawn_id}
+			catch {unset ssh_error_exit}
+			set child_start_time [clock seconds]
+			set childpid_file "$temp_dir/.[pid]"
+			set pid_file [open "$childpid_file" "w"]
+			puts $pid_file "[pid]"
+			close $pid_file
+			if {$child_pid == ""} {
+				set child_pid 0
+			}
+			set log_info "$log_info\n======$host $port======\n"
+			if {[info exists local_file] && [info exists remote_file]} {
+				if {![info exists before_file]} {
+					if {[send_file $local_file $remote_file $direction_file] > 0} {
+						send_error "$host faild"
+						set log_info "$log_info\n $host faild"
+					} else {
+						set log_info "$log_info\n $host success"
+					}
+				} elseif {[info exists before_file]} {
+					if {$before_file == "before"} {
+						if {[send_file $local_file $remote_file $direction_file] > 0} {
+							send_error "$host faild"
+							set log_info "$log_info $host faild"
+						} else {
+							set log_info "$log_info $host success"
+						}
+					}
+				}
+			}
+			if [info exists user] {
+				spawn ssh -p$port $host -l $user
+			} else {
+				spawn ssh -p$port $host
+			}
+			while {1} {
+				expect {
+					"$key_password" {
+						send "$pass\r"
+						set log_info "$log_info$expect_out(buffer)"
+					}
+					"$key_init" {
+						send "yes\r"
+						set log_info "$log_info$expect_out(buffer)"
+					}
+					"$key_confirm" {
+						send "yes\r"
+						set log_info "$log_info$expect_out(buffer)"
+					}
+					"$key_password_faild" {
+						puts "$host password error"
+						err_log $ppid $host "password"
+						set log_info "$log_info$expect_out(buffer)"
+						break
+					}
+					-re "$key_ps" {
+						for {set c 0} {$c < $command_list_length} {incr c} {
+							set command [lindex $command_list $c]
+							send "$command\r"
+							set log_info "$log_info$expect_out(buffer)"
+							expect {
+							-re "$key_ps" {
+								continue
+							}
+							"$key_newpassword" {
+								send "$newpass\r"
+								set log_info "$log_info$expect_out(buffer)"
+								expect "$key_newpassword" {
+									send "$newpass\r"
+									set log_info "$log_info$expect_out(buffer)"
+								expect -re "$key_ps"
+									continue
+								}
+							}
+							}
+						}
+					send "\r"
+					set log_info "$log_info$expect_out(buffer)"
+					expect {
+						-re "$key_ps" {
+							send "\r"
+							set log_info "$log_info$expect_out(buffer)"
+						}
+					}
+					break
+					}
+					timeout {
+						puts "$host timeout"
+						set ssh_error_exit 1
+						err_log $ppid $host "timeout"
+						break
+					}
+					default {
+						puts "$host connection faild"
+						set ssh_error_exit 1
+						err_log $ppid $host "connect"
+						break
+					}
+				}
+			}
+			if {![info exists ssh_error_exit]} {
+				send "exit\r"
+			}
+			catch {close}
+			catch {wait}
+			if {[info exists local_file] && [info exists remote_file]} {
+				if {[info exists before_file]} {
+					if {$before_file == "after"} {
+						if {[send_file $local_file $remote_file $direction_file] > 0} {
+							send_error "$host faild"
+							set log_info "$log_info$expect_out(buffer)"
+						} else {
+							set log_info "$log_info$expect_out(buffer)"
+						}
+					}
+				}
+			}
+			write_log $logfile $log_info
+			if [file exists "$childpid_file"] {
+				file delete "$childpid_file"
+			}
+			exit
+		} elseif {$child_pid > 0 || $ppid == [pid]} {
+			if {[clock seconds] != $now_time} {
+				set now_time [clock seconds]
+				set pid_file [glob -nocomplain -directory $temp_dir -tails -type f .*]
+			}
+			set run_pid [llength $pid_file]
+			set run_num 0
+			while {$run_pid >= $max_num} {
+				sleep 1
+				set pid_file [glob -nocomplain -directory $temp_dir -tails -type f .*]
+				set run_pid [llength $pid_file]
+				puts "you can wait..."
+			}
+			while {$run_pid <= 0 && $run_num < 5} {
+				after $sleep_time
+				set pid_file [glob -nocomplain -directory $temp_dir -tails -type f .*]
+				set run_pid [llength $pid_file]
+				incr run_num
+			}
+			puts "$host"
+			} else {
+				send_error "Fuck error"
+				err_log $ppid $host "sys"
+				exit
+			}
+    } else {
+		send_error "$host"
+		err_log $ppid $host "sys"
+    }
+    after $sleep_time
+    child
+}
+set total_log [sum_log $host_num $ppid]
+puts $total_log
