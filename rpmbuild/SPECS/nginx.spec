@@ -1,10 +1,10 @@
-%define	nginx_user	ngnix
+%define	nginx_user	nginx
 %define	nginx_group	nginx
 %define	nginx_home	/data/nginx
-%define	nginx_logdir	/data/nginx/logs
-%define	nginx_confdir	/data/nginx/conf
-%define	nginx_datadir	/data/nginx
-%define	nginx_web	/data/nginx/html
+%define	nginx_logdir	%{nginx_home}/logs
+%define	nginx_confdir	%{nginx_home}/conf
+%define	nginx_datadir	%{nginx_home}
+%define	nginx_web	%{nginx_home}/html
 
 Name:		nginx		
 Version:	1.4.7
@@ -27,7 +27,7 @@ Requires(preun):	chkconfig,initscripts
 Requires(postun):	initscripts
 
 %description
-nginx is a HTTP and reverse proxy server
+nginx is a HTTP and reverse proxy serve
 
 %prep
 %setup -q
@@ -45,7 +45,6 @@ rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 chmod 0755 %{buildroot}%{nginx_home}/sbin/nginx
 install -p -D -m 0755 %{SOURCE1} /etc/init.d/nginx
-install -p -D -m 0755 %{SOURCE1} %{buildroot}%{_initrddir}/nginx
 install -p -D -m 0644 %{SOURCE2} %{buildroot}%{nginx_confdir}/nginx.conf
 install -p -d -m 0644 %{buildroot}%{nginx_logdir}
 install -p -d -m 0644 %{buildroot}%{nginx_web}
@@ -55,20 +54,24 @@ install -p -d -m 0644 %{buildroot}%{nginx_home}/conf.d
 rm -rf %{buildroot}
 
 %pre
-%{_sbindir}/useradd -c "Nginx user" -s /bin/false -r -d %{nginx_home} %{nginx_user} 2>/dev/null
+%{_sbindir}/useradd -M %{nginx_user} >/dev/null 2>&1
 
 %preun
-if [ $1 = 0 ]; then
+if [ $1 -eq 0 ]; then
     /sbin/service nginx stop >/dev/null 2>&1
     /sbin/chkconfig --del nginx
+    /usr/sbin/userdel -f %{nginx_user} >/dev/null 2>&1
+    /bin/rm /etc/init.d/nginx -f >/dev/null 2>&1
+    /bin/rm %{nginx_home} -rf >/dev/null 2>&1
 fi
 
 %post
 /sbin/chkconfig --add nginx
+/etc/init.d/nginx restart >/dev/null 2>&1 
 
 %postun
 if [ $1 -ge 1 ]; then
-    /sbin/service nginx restart > /dev/null 2>&1 
+    /etc/init.d/nginx restart >/dev/null 2>&1 
 fi
 
 %files
@@ -76,7 +79,6 @@ fi
 %doc
 %{nginx_datadir}/
 %{nginx_home}/sbin/nginx
-%{_initrddir}/nginx
 %dir	%{nginx_confdir}
 %dir	%{nginx_web}
 %dir	%{nginx_logdir}
