@@ -1,0 +1,67 @@
+#!/bin/bash
+# chkconfig: - 80 12
+# description: A persistent key-value database with network interface
+# processname: redis-server
+# config: /data/redis/etc/redis.conf
+# pidfile: /data/redis/run/redis.pid
+RETVAL=0
+prog="redis-server"
+server="/data/redis/sbin/redis-server"
+config="/data/redis/etc/redis.conf"
+pidfile="/data/redis/run/redis.pid"
+start() {
+	if [ -e $pidfile ];then
+             echo "$prog already running...."
+             exit 1
+        fi
+	echo -n $"Starting $prog: "
+	echo
+	$server $config
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/$prog >/dev/null 2>&1
+	return $RETVAL
+}
+
+stop() {
+	echo -n "Stoping...$prog"
+	echo
+	echo -n "Shutdown $prog may take a while,Bgsave......"
+	/data/redis/bin/redis-cli bgsave >/dev/null 2>&1
+	RETVAL=$?
+	if [ $RETVAL -eq 0 ];then
+		pkill $prog
+		rm -rf /var/lock/subsys/$prog >/dev/null 2>&1
+	else
+		echo -n "Bgsave came error..."
+	fi
+	RETVAL=$?
+	echo
+	return $RETVAL
+}
+
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  status)
+	status -p $pid $prog
+	RETVAL=$?
+	;;
+  restart)
+	restart
+	;;
+   *)
+	echo $"Usage: $0 {start|stop|status|restart}"
+	RETVAL=1
+esac
+
+exit $RETVAL
