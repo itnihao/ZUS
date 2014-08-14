@@ -5,7 +5,7 @@ nginx_source:
     - unless: test -e /tmp/nginx-1.4.7.tar.gz
     - source: salt://nginx/files/nginx-1.4.7.tar.gz
 
-tar_nginx:
+extract_nginx:
   cmd.run:
     - cwd: /tmp
     - names:
@@ -36,7 +36,7 @@ nginx_compile:
       - make
       - make install
     - require:
-      - cmd: tar_nginx
+      - cmd: extract_nginx
       - pkg: nginx_pkg
     - unless: test -d /data/nginx
 nginx_make:
@@ -56,3 +56,9 @@ nginx_install:
     - require:
       - pkg: nginx_pkg
       - cmd: nginx_make
+nginx_dir:
+  cmd.run:
+    - names:
+      - mkdir /data/nginx/conf.d/
+    - require:
+      - cmd: nginx_compile
