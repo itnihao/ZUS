@@ -23,12 +23,12 @@ def ssh(queue_get,command):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(hostname=ipaddr,port=int(shport),username="root",password=passwd)
         stdin,stdout,stderr=ssh.exec_command(command)
-        print "\033[42m-----------------%s------------------\033[0m\n" "%s" %(str(ipaddr),stdout.read())
+        print "--------------------%s--------------------""\033[42msuccess\033[0m\n" %(str(ipaddr))
         ssh.close()
     except Exception,err:
-        print "\033[41m-----------------%s------------------\033[0m\n%s:\t%s" %(ipaddr,ipaddr,err)
+        print "--------------------%s--------------------""\033[41m%s\033[0m" %(ipaddr,err)
         ssh_error=open("error.log","a")
-        ssh_error.write("%s\t%s\t%s\n" %(now,ipaddr,err))
+        ssh_error.write("%s\t\t%s\t\t%s\n" %(now,ipaddr,err))
         ssh_error.close()
         pass
 
