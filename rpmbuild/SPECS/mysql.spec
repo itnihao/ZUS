@@ -58,10 +58,7 @@ mkdir -p /data/mysql/data
 %install
 rm -rf %{buildroot}
 make DESTDIR=%{buildroot}/ install
-#install -p -d -m 0644 %{buildroot}%{mysql_home}
-#install -p -d -m 0644 %{buildroot}%{mysql_data}
-#install -p -d -m 0644 %{buildroot}%{mysql_binlog}
-install -p -D -m 0755 %{SOURCE1} /etc/init.d/mysql
+install -p -D -m 0755 %{SOURCE1} %{buildroot}%{_initrddir}/mysql
 install -p -D -m 0644 %{SOURCE2} %{buildroot}%{mysql_home}/my.cnf
 
 %clean
@@ -84,6 +81,7 @@ fi
 chown -R mysql.mysql /data/mysql
 ./data/mysql/scripts/mysql_install_db --datadir=/data/mysql/data/ --basedir=/data/mysql/ --user=mysql
 service mysql restart
+ln -s /data/mysql/lib/libmysqlclient.so.18 /usr/lib64/libmysqlclient.so.18 >/dev/null 2>&1
 #chmod 664 /data/mysql/binlog -R
 
 %postun
@@ -94,5 +92,6 @@ rm -rf /home/mysql
 %defattr(-,root,root,-)
 %doc
 %{mysql_home}/
+%{_initrddir}/mysql
 
 %changelog

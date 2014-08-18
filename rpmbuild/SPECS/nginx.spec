@@ -1,10 +1,6 @@
 %define	nginx_user	nginx
 %define	nginx_group	nginx
 %define	nginx_home	/data/nginx
-%define	nginx_logdir	%{nginx_home}/logs
-%define	nginx_confdir	%{nginx_home}/conf
-%define	nginx_datadir	%{nginx_home}
-%define	nginx_web	%{nginx_home}/html
 
 Name:		nginx		
 Version:	1.4.7
@@ -38,23 +34,20 @@ export DESTDIR=%{buildroot}
 --user=%{nginx_user} \
 --group=%{nginx_group} \
 --prefix=%{nginx_home}
-make 
+make -j %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot}
-chmod 0755 %{buildroot}%{nginx_home}/sbin/nginx
-install -p -D -m 0755 %{SOURCE1} /etc/init.d/nginx
-install -p -D -m 0644 %{SOURCE2} %{buildroot}%{nginx_confdir}/nginx.conf
-install -p -d -m 0644 %{buildroot}%{nginx_logdir}
-install -p -d -m 0644 %{buildroot}%{nginx_web}
+make DESTDIR=%{buildroot}/ install
+install -p -D -m 0755 %{SOURCE1} %{buildroot}%{_initrddir}/nginx
+install -p -D -m 0644 %{SOURCE2} %{buildroot}%{nginx_home}/conf/nginx.conf
 install -p -d -m 0644 %{buildroot}%{nginx_home}/conf.d
-
 %clean
 rm -rf %{buildroot}
 
 %pre
-%{_sbindir}/useradd -M %{nginx_user} >/dev/null 2>&1
+grep -q nginx /etc/passwd || %{_sbindir}/groupadd %{nginx_group} >/dev/null 2>&1
+grep -q nginx /etc/passwd || %{_sbindir}/useradd -g %{nginx_user} %{nginx_user}>/dev/null 2>&1
 
 %preun
 if [ $1 -eq 0 ]; then
@@ -62,35 +55,21 @@ if [ $1 -eq 0 ]; then
     /sbin/chkconfig --del nginx
     /usr/sbin/userdel -f %{nginx_user} >/dev/null 2>&1
     /bin/rm /etc/init.d/nginx -f >/dev/null 2>&1
-    /bin/rm %{nginx_home} -rf >/dev/null 2>&1
 fi
 
 %post
 /sbin/chkconfig --add nginx
-/etc/init.d/nginx restart >/dev/null 2>&1 
+service nginx restart >/dev/null 2>&1 
 
 %postun
-if [ $1 -ge 1 ]; then
-    /etc/init.d/nginx restart >/dev/null 2>&1 
-fi
+rm /home/nginx -rf
+rm /data/nginx -rf
 
 %files
 %defattr(-,root,root,-)
 %doc
-%{nginx_datadir}/
-%{nginx_home}/sbin/nginx
-%dir	%{nginx_confdir}
-%dir	%{nginx_web}
-%dir	%{nginx_logdir}
-%dir	%{nginx_home}/conf.d
-%config(noreplace) %{nginx_confdir}/win-utf
-%config(noreplace) %{nginx_confdir}/nginx.conf.default
-%config(noreplace) %{nginx_confdir}/mime.types.default
-%config(noreplace) %{nginx_confdir}/fastcgi_params
-%config(noreplace) %{nginx_confdir}/fastcgi_params.default
-%config(noreplace) %{nginx_confdir}/koi-win
-%config(noreplace) %{nginx_confdir}/koi-utf
-%config(noreplace) %{nginx_confdir}/nginx.conf
-%config(noreplace) %{nginx_confdir}/mime.types
+%{nginx_home}/
+%{nginx_home}/conf.d
+%{_initrddir}/nginx
 
 %changelog
