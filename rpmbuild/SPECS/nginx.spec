@@ -1,24 +1,23 @@
-%define	nginx_user	nginx
-%define	nginx_group	nginx
-%define	nginx_home	/data/nginx
+%define	            nginx_user	nginx
+%define	            nginx_group	nginx
+%define	            nginx_home	/data/nginx
 
-Name:		nginx		
-Version:	1.4.7
-Release:	1%{?dist}
-Summary:	High Performance Web Server
+Name:		        nginx-orbs		
+Version:	        1.4.7
+Release:	        1%{?dist}
+Summary:	        High Performance Web Server
 
-Group:		Applications/Server
-License:	GPL
-URL:		http://nginx.org/
-Source0:	http://nginx.org/download/%{name}-%{version}.tar.gz
-Source1:	nginx.init
-Source2:	nginx.conf
-BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-
-BuildRequires:	pcre-devel,zlib-devel
-Requires:	pcre,zlib,openssl
-Requires(pre):	shadow-utils
-Requires(post):	chkconfig
+Group:		        Applications/Server
+License:	        GPL
+URL:		        http://nginx.org/
+Source0:	        http://nginx.org/download/%{name}-%{version}.tar.gz
+Source1:	        nginx.init
+Source2:	        nginx.conf
+BuildRoot:	        %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+BuildRequires:	    pcre-devel,zlib-devel
+Requires:	        pcre,zlib,openssl
+Requires(pre):	    shadow-utils
+Requires(post):	    chkconfig
 Requires(preun):	chkconfig,initscripts
 Requires(postun):	initscripts
 
@@ -33,7 +32,14 @@ export DESTDIR=%{buildroot}
 ./configure \
 --user=%{nginx_user} \
 --group=%{nginx_group} \
---prefix=%{nginx_home}
+--prefix=%{nginx_home} \
+--with-http_stub_status_module \
+--with-http_realip_module \
+--with-http_ssl_module \
+--with-http_gzip_static_module \
+--with-http_secure_link_module \
+--with-pcre 
+
 make -j %{?_smp_mflags}
 
 %install
