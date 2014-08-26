@@ -15,7 +15,7 @@ innobackupex=/usr/bin/innobackupex
 mysql_etc=/data/mysql/my.cnf
 backup_dir=/data/xtraback
 logfile=/data/backup_logfile
-pidfile=/data/backup.pid
+datetime=$(date +"%F-%H-%M")
 
 function pre_check() {
     if [ ! -d ${backup_dir} ];then
@@ -23,38 +23,52 @@ function pre_check() {
     else
         GREEN "backup dir exists"
     fi
-    if [ ! `rpm -q |grep percona-xtrabackup >/dev/null 2>&1` ];then
+    if [ ! -d ${incre_dir} ];then
+        mkdir ${incre_dir}
+    else
+        GREEN "incre dir exists"
+    fi
+    rpm -qa |grep percona-xtrabackup >/dev/null 2>&1
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ];then
+        GREEN "percona-xtrabackup is already installed"
+    else
         yum -y install perl-DBD-mysql perl-Time-HiRes >/dev/null 
         rpm -ivh http://www.percona.com/downloads/XtraBackup/XtraBackup-2.2.3/binary/redhat/6/x86_64/percona-xtrabackup-2.2.3-4982.el6.x86_64.rpm 
-    else
-        GREEN "percona-xtrabackup is already installed"
     fi
 }
-[ ! -f $pidfile ] && touch ${pidfile}
-_PID=`cat ${pidfile}`
-if [ `ps ax|awk '{print $1}'|grep -v "grep"|grep -c "${_PID}"` -eq 1 ];then 
-    GREEN "innobackupex progress is already running"
-    exit 1
-else
-    echo $$ >${pidfile}
-fi                           
-function bakup_all() {
+
+function backup_all() {
     cd $backup_dir
-    innobackupex --user=$user --password=$password --host=$host --defaults-file=$mysql_etc --use-memory=10M --throttle=20 --stream=tar $backup_dir |gzip - > backup_all.tar.gz >/dev/null 
+    $innobackupex --user=$user --password=$password --host=$host --defaults-file=$mysql_etc --use-memory=10M --throttle=20 --stream=tar $backup_dir |gzip - > $datetime.tar.gz  
     RETVAL=$?
     if [ $RETVAL -eq 0 ];then
         GREEN "Complete backup success"
-        rm -rf ${pidfile}
         cd ${backup_dir}
-        /bin/tar zxfi backup_all.tar.gz xtrabackup_checkpoints
+        /bin/tar zxfi $datetime.tar.gz xtrabackup_checkpoints
     else
         RED "Complete backup faild"
     fi
 }
-#function backup_irc() {
+function backup_inc() {
+    if [ ! -e $backup_dir/xtrabackup_checkpoints ];then
+        RED "Check complete backup not run yet"
+        backup_all 
+    else
+        checkpoints=$(awk '/to_lsn/ {print $3}' /data/xtraback/xtrabackup_checkpoints)
+        xtrabackup  --defaults-file=/data/mysql/my.cnf --backup --user=$user --password=$password --host=$host  --use-memory=10M --throttle=20 --target-dir=$backup_dir/$datetime --incremental-lsn=$checkpoints
+        RETVAL=$?
+        if [ $RETVAL -eq 0 ];then
+            GREEN "incre backup success"
+            cd $backup_dir
+            cp $backup_dir/$datetime/xtrabackup_checkpoints $backup_dir/xtrabackup_checkpoints
+            tar zcvf $datetime.tar.gz $datetime >/dev/null 2>&1
+            rm -rf $datetime
+        else
+            RED "incre backup faild"
+        fi
+    fi
+}
 
-#}
-
-
-bakup_all
-
+pre_check
+backup_inc
