@@ -12,9 +12,9 @@ user="root"
 password="123456"
 host="127.0.0.1"
 innobackupex=/usr/bin/innobackupex
+xtrabackup=/usr/bin/xtrabackup
 mysql_etc=/data/mysql/my.cnf
 backup_dir=/data/xtraback
-logfile=/data/backup_logfile
 datetime=$(date +"%F-%H-%M")
 
 function pre_check() {
@@ -55,8 +55,8 @@ function backup_inc() {
         RED "Check complete backup not run yet"
         backup_all 
     else
-        checkpoints=$(awk '/to_lsn/ {print $3}' /data/xtraback/xtrabackup_checkpoints)
-        xtrabackup  --defaults-file=/data/mysql/my.cnf --backup --user=$user --password=$password --host=$host  --use-memory=10M --throttle=20 --target-dir=$backup_dir/$datetime --incremental-lsn=$checkpoints
+        checkpoints=$(awk '/to_lsn/ {print $3}' $backup_dir/xtrabackup_checkpoints)
+        $xtrabackup  --defaults-file=$mysql_etc --backup --user=$user --password=$password --host=$host  --use-memory=10M --throttle=20 --target-dir=$backup_dir/$datetime --incremental-lsn=$checkpoints
         RETVAL=$?
         if [ $RETVAL -eq 0 ];then
             GREEN "incre backup success"
