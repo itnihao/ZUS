@@ -34,15 +34,15 @@ export DESTDIR=%{buildroot}
         --with-config-file-path=/data/php/etc \
         --with-mysql=/data/mysql \
         --with-mysqli=/data/mysql/bin/mysql_config \
-        --enable-fpm \
         --with-openssl \
         --with-gd \
         --with-zlib \
         --with-curl \
         --with-libxml \
-        --with-png \
-        --with-jpeg \
-        --with-freetype \
+        --with-png-dir \
+        --with-jpeg-dir \
+        --with-freetype-dir \
+        --with-gettext \
         --with-mcrypt \
         --with-mhash \
         --enable-soap \
@@ -50,14 +50,15 @@ export DESTDIR=%{buildroot}
         --enable-sockets \
         --enable-safe-mode \
         --enable-bcmath \
-        --enable-mbstring 
+        --enable-mbstring \
+        --enable-fpm 
 make 
 
 %install
 make install INSTALL_ROOT=%{buildroot}
 install -p -D -m 0755 %{SOURCE1} %{buildroot}%{_initrddir}/php
 install -p -D -m 0644 %{SOURCE2} %{buildroot}%{php_home}/etc/php-fpm.conf
-install -p -D -m 0644 %{SOURCE3} %{buildroot}%{php_home}/lib/php.ini
+install -p -D -m 0644 %{SOURCE3} %{buildroot}%{php_home}/etc/php.ini
 rm -rf %{buildroot}/.channels/.alias/pear.txt %{buildroot}/.channels/.alias/pecl.txt %{buildroot}/.channels/__uri.reg %{buildroot}/.channels/pear.php.net.reg %{buildroot}/.channels/pecl.php.net.reg %{buildroot}/.depdb %{buildroot}/.depdblock %{buildroot}/.filemap %{buildroot}/.lock %{buildroot}/.channels/.alias/phpdocs.txt %{buildroot}/.channels/doc.php.net.reg >/dev/null 2>&1
 rm -rf %{buildroot}/.registry/.channel.pecl.php.net %{buildroot}/.registry/.channel.doc.php.net/ %{buildroot}/.registry/.channel.__uri/ >/dev/null 2>&1
 rm -rf %{buildroot}/.channels/ >/dev/null 2>&1
