@@ -3,26 +3,24 @@
 Name:		zabbix-orbs
 Version:    2.2.5	
 Release:	1%{?dist}
-Summary:	zabbix server
+Summary:	zabbix agentd
 
 Group:		Applications/Server
 License:	BSD
 URL:		http://www.zabbix.com
 Source0:	http://jaist.dl.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/2.2.5/%{name}-%{version}.tar.gz
-Source1:    zabbix_server.conf 
-Source2:    zabbix_server.init
-Source3:    locales.inc.php
+Source1:    zabbix_agentd.conf 
+Source2:    zabbix_agentd
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:      net-snmp, net-snmp-devel, curl, curl-devel, perl-DBI
-BuildRequires:      nginx-orbs, mysql-orbs
 Requires(pre):      shadow-utils
 Requires(post):     chkconfig
 Requires(preun):    chkconfig,initscripts
 Requires(postun):   initscripts
 
 %description
-zabbix server
+zabbix agentd
 
 %prep
 %setup -q
@@ -32,23 +30,14 @@ zabbix server
 export DESTDIR=%{buildroot}
 ./configure \
         --prefix=%{zabbix_home} \
-        --with-mysql=/data/mysql/bin/mysql_config \
-        --with-net-snmp \
-        --with-libcurl \
-        --enable-server \
         --enable-agent
 
 
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
-install -p -D -m 0755 %{SOURCE2} %{buildroot}%{_initrddir}/zabbix_server
-install -p -D -m 0644 %{SOURCE1} %{buildroot}%{zabbix_home}/etc/zabbix_server.conf
-install -p -d -m 0644 %{buildroot}%{zabbix_home}/html
-install -p -D -m 0644 %{SOURCE3} %{buildroot}%{zabbix_home}/html/include/locales.inc.php
-install -p -d -m 0644 %{buildroot}%{zabbix_home}/database
-cp frontends/php/* %{buildroot}%{zabbix_home}/html/ -R
-cp database/mysql/* %{buildroot}%{zabbix_home}/database/ -R
+install -p -D -m 0755 %{SOURCE2} %{buildroot}%{_initrddir}/zabbix_agentd
+install -p -D -m 0644 %{SOURCE1} %{buildroot}%{zabbix_home}/etc/zabbix_agentd.conf
 
 %clean
 rm -rf %{buildroot}
@@ -56,18 +45,16 @@ rm -rf %{buildroot}
 %pre
 grep -q zabbix /etc/passwd || %{_sbindir}/groupadd %{zabbix_user} >/dev/null 2>&1
 grep -q zabbix /etc/passwd || %{_sbindir}/useradd -g %{zabbix_user} %{zabbix_user}>/dev/null 2>&1
-#mysql -uroot -p123456 -e "create database zabbix;"
-#mysql -uroot -p123456 -e "grant all on zabbix.* to 'zabbix'@'localhost' identified by '123456';"
 
 %preun
-/sbin/service zabbix_server stop >/dev/null 2>&1
-/sbin/chkconfig --del zabbix_server
+/sbin/service zabbix_agentd stop >/dev/null 2>&1
+/sbin/chkconfig --del zabbix_agentd
 /usr/sbin/userdel -f %{zabbix_user} >/dev/null 2>&1
-/bin/rm /etc/init.d/zabbix_server -f >/dev/null 2>&1
+/bin/rm /etc/init.d/zabbix_agentd -f >/dev/null 2>&1
 
 %post
-/sbin/chkconfig --add zabbix_server
-service zabbix_server restart >/dev/null 2>&1 
+/sbin/chkconfig --add zabbix_agentd
+service zabbix_agentd restart >/dev/null 2>&1 
 
 %postun
 rm /home/zabbix -rf
@@ -77,7 +64,7 @@ rm /data/zabbix -rf
 %defattr(-,root,root,-)
 %doc
 %{zabbix_home}/
-%{_initrddir}/zabbix_server
+%{_initrddir}/zabbix_agentd
 
 %changelog
 
