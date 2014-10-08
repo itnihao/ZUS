@@ -1,74 +1,92 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 #by orbs
-import paramiko
-import Queue
-import getopt
-import threading
-import sys
-import datetime
+#version 
+#email 
+#doc
+from processing import Process,Queue
+import paramiko,sys,os
+from termcolor import colored
 
-def usage():
-    print '''
-        \033[41mExp:\033[0m\n
-        \033[42mpython demo.py -F iphost.txt -M 'command'\033[0m\n
-    '''
+#def USAGE():
+#	print '''
+#		\033[41mExp:\033[0m\n
+#		\033[41mExec command\033[0m\t\t\033[42mpython demo.py -C iphost command\033[0m\n
+#		\033[41mUpload file\033[0m\t\t\033[42mpython demo.py -F iphost sourcefile destdir\033[0m\n
+#		\033[41mFormat iphost:\033[0m\t\t\033[42m10.0.0.1 57522 passwd\033[0m\n
+#		\033[41mFormat command:\033[0m\t\t\033[42mone command per line\033[0m
+#	'''
 
-def ssh(queue_get,command):
-    try:
-        ipaddr=queue_get[0]
-        passwd=queue_get[1]
-        shport=queue_get[2]
-        ssh=paramiko.SSHClient()
-        ssh.load_system_host_keys()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(hostname=ipaddr,port=int(shport),username="root",password=passwd)
-        stdin,stdout,stderr=ssh.exec_command(command)
-        print "--------------------%s--------------------""\033[42msuccess\033[0m\n" %(str(ipaddr))
-        ssh.close()
-    except Exception,err:
-        print "--------------------%s--------------------""\033[41m%s\033[0m" %(ipaddr,err)
-        ssh_error=open("error.log","a")
-        ssh_error.write("%s\t\t%s\t\t%s\n" %(now,ipaddr,err))
-        ssh_error.close()
-        pass
+def USAGE():
+	print colored("Exp:\n",'red')
+	print colored("Exec command\t\tpython demo.py -C iphost command\n",'blue')
+	print colored("Upload file\t\tpython demo -F iphost sourcefile destdir\n",'blue')
 
+def SSH(queue,command):
+	try:
+		ipaddr=queue[0]
+		sshport=queue[1]
+		passwd=queue[2]
+		ssh=paramiko.SSHClient()
+		ssh.load_system_host_keys()
+		ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+		ssh.connect(hostname=ipaddr,port=int(sshport),username='root',password=passwd)
+		stdin,stdout,stderr=ssh.exec_command(command)
+		if str(stderr.read()) == "":
+			print colored("----------%s----------[%s] :)",'green') %(str(ipaddr),command)
+		else:
+			print colored("----------%s----------exec[%s] :(",'red') %(str(ipaddr),command)
+		ssh.close()
+	except Exception,err:
+		print colored("----------%s----------%s",'red') %(str(ipaddr),err)
+
+def TRANS(queue,source,destdir):
+	try:
+		ipaddr=queue[0]
+		sshport=queue[1]
+		passwd=queue[2]
+		trans=paramiko.Transport((ipaddr,int(sshport)))
+		trans.connect(username='root',password=passwd)
+		sftp=paramiko.SFTPClient.from_transport(trans)
+		sftp.put(os.path.join(os.getcwd(),source),os.path.join(destdir,source))
+		print colored("----------%s----------upload %s sucess :)",'green') %(str(ipaddr),source)
+		trans.close()
+	except Exception,err:
+		print colored("----------%s----------",'red') %err
+
+def exe():
+	queue=Queue()
+	hostfile_line=open(sys.argv[2],'r').readlines()
+	command_file=open(sys.argv[3],'r').readlines()
+	for command_line in command_file:
+		command_list=command_line.split('\n')
+		command=''.join(command_list)
+		for hostfile in hostfile_line:
+			eachline=hostfile.split()
+			queue.put(eachline)
+			eachline=Process(target=SSH,args=(queue.get(),str(command)))
+			eachline.start()
+	eachline.join()
+
+def load():
+	queue=Queue()
+	hostfile_line=open(sys.argv[2],'r').readlines()
+	source=sys.argv[3]
+	destdir=sys.argv[4]
+	for hostfile in hostfile_line:
+		eachline=hostfile.split()
+		queue.put(eachline)
+		eachline=Process(target=TRANS,args=(queue.get(),source,destdir))
+		eachline.start()
+	eachline.join()
+	
 if __name__ == '__main__':
-    try:
-        opts,args=getopt.getopt(sys.argv[1:],"(h)F:M:",["help","cmd=","command="])
-        now=datetime.datetime.now()
-        if len(sys.argv) == 1:
-            usage()
-            sys.exit()
-        if sys.argv[1] in ("-H","-h","-help"):
-            usage()
-            sys.exit()
-        elif sys.argv[1] in ("-F","--cmd="):
-            for opt,arg in opts:
-                if opt in ("-F","--cmd="):
-                    iphost=arg
-                if opt in ("-M","--command="):
-                    command=arg
-            hosts=open(iphost)
-            threads=[]
-            sshqueue=Queue.Queue(maxsize=0)
-            for host in hosts.readlines():
-                if len(host) == 1 or host.startswith('#'):
-                    continue
-                f=host.split()
-                sshqueue.put(f)
-            hosts.close()
-            for x in xrange(0,sshqueue.qsize()):
-                if sshqueue.empty():
-                    break
-                mutex = threading.Lock()
-                mutex.acquire()
-                mutex.release()
-                threads.append(threading.Thread(target=ssh, args=(sshqueue.get(),command)))
-            for t in threads:
-                t.start()
-                t.join()
-        else:
-            print "\033[31m error args\033[0m"
-    except Exception,err:
-            usage()
-            print err
+	if len(sys.argv) == 1:
+		USAGE()
+		sys.exit()
+	if sys.argv[1] == '-C':
+		exe()
+	elif sys.argv[1] == '-F':
+		load()
+	else:
+		USAGE()
+		sys.exit()
