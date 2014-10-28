@@ -1,0 +1,23 @@
+
+
+
+
+apt-get install neutron-server neutron-plugin-ml2
+service nova-network
+service nova-network restart
+apt-get install openstack-dashboard
+service apache2 restart
+
+
+
+export OS_TENANT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSSWORD=admin
+export OS_AUTH_URL="http://192.168.85.129:5000/v2.0/"
+
+
+
+export OS_USERNAME=admin
+export OS_PASSWORD=admin
+export OS_TENANT_NAME=admin
+export OS_AUTH_URL=http://192.168.2.58:35357/v2.0
