@@ -1,0 +1,54 @@
+# Firewall configuration written by system-config-securitylevel
+# Manual customization of this file is not recommended.
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:RH-Firewall-1-INPUT - [0:0]
+-A INPUT -j RH-Firewall-1-INPUT
+-A FORWARD -j RH-Firewall-1-INPUT
+-A RH-Firewall-1-INPUT -i lo -j ACCEPT
+-A RH-Firewall-1-INPUT -p icmp --icmp-type any -j ACCEPT
+-A RH-Firewall-1-INPUT -p 50 -j ACCEPT
+-A RH-Firewall-1-INPUT -p 51 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+#internal access
+-A RH-Firewall-1-INPUT -s 10.0.0.0/8 -m state --state NEW  -j ACCEPT
+-A RH-Firewall-1-INPUT -s 192.168.0.0/16 -m state --state NEW  -j ACCEPT
+#end of internal access
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -m multiport --dports 80,443,9090,9091,9063,1464 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m udp -p udp --dport 161 -j ACCEPT
+###mysql 
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 192.168.0.0/16 -m multiport --dports 3308 -j ACCEPT
+#socket
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -m multiport --dports 843,8081 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -m multiport --dports 8001,8020,8021 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -m multiport --dports 8118,1863 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m state --state NEW -m tcp --dport 10000:10049 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m state --state NEW -m tcp --dport 10051:50003 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m state --state NEW -m tcp --dport 50005:57521 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m state --state NEW -m tcp --dport 57523:65000 -j ACCEPT
+#zabbix
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 122.226.74.36/32 --dport 10050 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 122.226.74.168/32 --dport 10050 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 203.66.167.20/32 --dport 10050 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 63.159.217.36 --dport 10050 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 54.208.9.105 --dport 10050 -j ACCEPT
+#rsync port
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 122.226.206.212/32 --dport 873 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 210.242.165.12/32 --dport 873 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 61.220.34.108/32 --dport 873 -j ACCEPT
+#ssh
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 180.166.136.66/30 -m multiport --dports 57522,22 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 122.227.0.182/32 -m multiport --dports 57522,22 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 27.115.49.16/29 -m multiport --dports 57522,22 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 180.168.181.52/30 -m multiport --dports 57522,22 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 140.207.74.226/32 -m multiport --dports 57522,22 -j ACCEPT 
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 59.124.229.240 -m multiport --dports 57522,22 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 210.242.165.12/32 -m multiport --dports 57522,22 -j ACCEPT 
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 203.66.0.0/16  -m multiport --dports 57522,22 -j ACCEPT 
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp -s 27.115.70.178/29  -m multiport --dports 57522,22 -j ACCEPT 
+#end of ssh
+
+-A RH-Firewall-1-INPUT -j REJECT --reject-with icmp-host-prohibited
+COMMIT

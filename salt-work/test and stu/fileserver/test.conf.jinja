@@ -1,7 +1,0 @@
-disk_num: {{ grains['disk_num'] }}
-
-{% if grains['os'] == 'ubuntu' %}
-host: {{ grains['host'] }}
-{% elif grains['os'] == 'CentOS' %}
-host: {{ grains['fqdn'] }}
-{% endif %}

@@ -1,0 +1,42 @@
+daemonize yes
+pidfile /var/run/redis/redis.pid
+bind 0.0.0.0
+port 6381
+loglevel warning
+logfile /var/log/redis.log
+unixsocket /var/run/redis/redis.sock
+unixsocketperm 777
+timeout 0
+databases 16
+save 900 1000
+save 300 10000000
+save 60 10000000
+stop-writes-on-bgsave-error yes
+rdbcompression yes
+rdbchecksum yes
+dbfilename /data/conf/db/dump.rdb
+dir /data/conf/db
+slave-serve-stale-data yes
+slave-read-only yes
+slave-priority 100
+appendonly no
+appendfilename /data/conf/db/appendonly.aof
+appendfsync everysec
+no-appendfsync-on-rewrite yes
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+maxmemory 8098418688
+lua-time-limit 5000
+slowlog-log-slower-than 10000
+slowlog-max-len 128
+hash-max-ziplist-entries 512
+hash-max-ziplist-value 64
+list-max-ziplist-entries 512
+list-max-ziplist-value 64
+set-max-intset-entries 512
+zset-max-ziplist-entries 128
+zset-max-ziplist-value 64
+activerehashing yes
+client-output-buffer-limit normal 0 0 0
+client-output-buffer-limit slave 256mb 64mb 60
+client-output-buffer-limit pubsub 32mb 8mb 60

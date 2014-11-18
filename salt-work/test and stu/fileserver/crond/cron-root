@@ -1,0 +1,4 @@
+*/5 * * * * /usr/sbin/ntpdate ntp.api.bz >> /var/log/ntp.log 2>&1;/sbin/hwclock -w
+10 */1 * * * find /data/backup/database_3308/ -cmin  +1440  -name "*.gz" -exec rm -f  {} \;
+10 */1 * * * find /data/backup/redisbase_6381/ -cmin  +1440  -name "*.tgz" -exec rm -f  {} \;
+1 */1 * * * /usr/bin/python /usr/local/uuzuback/uuzuback_client.py > /dev/null 2>&1

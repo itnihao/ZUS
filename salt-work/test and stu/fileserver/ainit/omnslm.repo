@@ -1,0 +1,6 @@
+[omnslm_repo]
+name=omnslm repo
+baseurl=http://192.168.0.100:8088/6.2/$basearch/
+#failovermethod=priority
+enabled=1
+gpgcheck=0
