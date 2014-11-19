@@ -5,7 +5,7 @@ import urllib2,sys,json,argparse
 from urllib2 import URLError
 class zabbix_tools:
 	def __init__(self):
-		self.url=("http://127.0.0.1:8081/zabbix/api_jsonrpc.php")
+		self.url=("http://10.0.5.216/zabbix/api_jsonrpc.php")
 		self.header={"Content-Type":"application/json"}
 
 	def user_login(self):
@@ -49,14 +49,17 @@ class zabbix_tools:
 		else:
 			response=json.loads(result.read())
 			result.close()
-			for host in response['result']:
-				status={"0":"OK","1":"Disabled"}
-				available={"0":"Unknown","1":"Available","2":"Unavailable"}
-				if len(hostip) == 0:
-					print "HostID: %s\t HostName:%s\t Status:\033[32m%s\033[0m\t Available: \033[31m%s\033[0m" %(host['hostid'],host['name'],status[host['status']],available[host['available']])
-				else:
-					print "HostID: %s\t HostName:%s\t Status:\033[32m%s\033[0m\t Available: \033[31m%s\033[0m" %(host['hostid'],host['name'],status[host['status']],available[host['available']])
-					return host['hostid']
+			if len(response['result']) == 0:
+				print "HostName: \033[31m%s 没有添加\033[0m " %hostip
+			else:
+				for host in response['result']:
+					status={"0":"OK","1":"Disabled"}
+					available={"0":"Unknown","1":"Available","2":"Unavailable"}
+					if len(hostip) == 0:
+						print "HostID: %s\t HostName:%s\t Status:\033[32m%s\033[0m\t Available: \033[31m%s\033[0m" %(host['hostid'],host['name'],status[host['status']],available[host['available']])
+					else:
+						print "HostID: %s\t HostName:%s\t Status:\033[32m%s\033[0m\t Available: \033[31m%s\033[0m" %(host['hostid'],host['name'],status[host['status']],available[host['available']])
+						return host['hostid']
 
 	def get_template(self,template_name=""):
 		data=json.dumps({
