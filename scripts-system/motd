@@ -1,0 +1,3 @@
+wget https://raw.githubusercontent.com/KittyKatt/screenFetch/master/screenfetch-dev
+sudo cp screenfetch-dev /usr/local/bin/screenfetch
+sudo chmod 755 /usr/local/bin/screenfetch
