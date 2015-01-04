@@ -2,7 +2,7 @@
 name=CentOS-$releasever - Base - alibaba
 baseurl=http://mirrors.aliyun.com/centos/$releasever/os/$basearch/
 gpgcheck=1
-gpgkey=http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-6
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6
 
 #released updates 
 [updates]
@@ -10,30 +10,30 @@ name=CentOS-$releasever - Updates - alibaba
 baseurl=http://mirrors.aliyun.com/centos/$releasever/updates/$basearch/
 #mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=updates
 gpgcheck=1
-gpgkey=http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-6
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6
 
 #additional packages that may be useful
 [extras]
 name=CentOS-$releasever - Extras - alibaba
 baseurl=http://mirrors.aliyun.com/centos/$releasever/extras/$basearch/
-#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=extras
+#mirrorlist=http://mirrors.aliyun.com/?release=$releasever&arch=$basearch&repo=extras
 gpgcheck=1
-gpgkey=http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-6
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6
 
 #additional packages that extend functionality of existing packages
 [centosplus]
 name=CentOS-$releasever - Plus - alibaba
 baseurl=http://mirrors.aliyun.com/centos/$releasever/centosplus/$basearch/
-#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=centosplus
+#mirrorlist=http://mirrors.aliyun.com/?release=$releasever&arch=$basearch&repo=centosplus
 gpgcheck=1
 enabled=0
-gpgkey=http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-6
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6
 
 #contrib - packages by Centos Users
 [contrib]
 name=CentOS-$releasever - Contrib - alibaba
 baseurl=http://mirrors.aliyun.com/centos/$releasever/contrib/$basearch/
-#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=contrib
+#mirrorlist=http://mirrors.aliyun.com/?release=$releasever&arch=$basearch&repo=contrib
 gpgcheck=1
 enabled=0
-gpgkey=http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-6
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6

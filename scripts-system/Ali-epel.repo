@@ -5,7 +5,7 @@ baseurl=http://mirrors.aliyun.com/epel/6/$basearch
 failovermethod=priority
 enabled=1
 gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6
 
 [epel-debuginfo]
 name=Extra Packages for Enterprise Linux 6 - $basearch - Debug
@@ -13,7 +13,7 @@ baseurl=http://mirrors.aliyun.com/epel/6/$basearch/debug
 #mirrorlist=https://mirrors.aliyun.com/metalink?repo=epel-debug-6&arch=$basearch
 failovermethod=priority
 enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6
 gpgcheck=1
 
 [epel-source]
@@ -22,5 +22,5 @@ baseurl=http://mirrors.aliyun.com/epel/6/SRPMS
 #mirrorlist=https://mirrors.aliyun.com/metalink?repo=epel-source-6&arch=$basearch
 failovermethod=priority
 enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6
 gpgcheck=1
